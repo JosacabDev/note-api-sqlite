@@ -1,0 +1,2 @@
+- Crear un manejador de errores para la api. Crear los errores tipo interfaces para manejar los diferentes errores, ytratar de standarizar los errores en la app, evita repetir codigo y mejor forma de manejar.
+- Crear logs generales y estructurados para la API, informativos y con un formato perfecto (investigar acerca del standar o de como deberia ser eso en una api).
