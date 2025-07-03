@@ -1,0 +1,28 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+go.work.sum
+
+# IDE/editor folders
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# SQLite DB
+*.db
+
+# Environment files
+.env
+
+todo.md
