@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"github/JosacabDev/api-sqlite/internal/server"
-	"log"
+	"github/JosacabDev/api-sqlite/pkg/logger"
 	"os"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -30,24 +30,27 @@ func initDB(filepath, schemaPath string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	return db, nil
 
+	return db, nil
 }
 
 func main() {
 	var err error
+
+	logger.Init()
+
 	db, err := initDB("notes.db", "db/schema.sql")
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal.Println(err)
 	}
+	logger.Info.Println("Database initialized successfully")
 	defer db.Close()
 
 	srv := server.NewServer(":8080", db)
-	log.Println("Starting server on :8080")
+	logger.Info.Println("Starting server on :8080")
 	err = srv.Start()
 	if err != nil {
-		log.Fatalf("Error starting server: %v", err)
+		logger.Fatal.Println("Error starting server: ", err)
 	}
-	log.Println("Server stopped")
 
 }

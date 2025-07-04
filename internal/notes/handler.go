@@ -3,6 +3,7 @@ package notes
 import (
 	"encoding/json"
 	"fmt"
+	"github/JosacabDev/api-sqlite/pkg/logger"
 	"net/http"
 	"strconv"
 
@@ -20,15 +21,18 @@ func NewHandlerNote(repo Repository) *HandlerNote {
 }
 
 func (h *HandlerNote) GetAllNotes(w http.ResponseWriter, r *http.Request) {
-	// Handler for listing all notes
 	notes, err := h.Repo.GetAllNotes()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to retrieve notes. Error: %s", err.Error()), http.StatusInternalServerError)
+		logger.Error.Println("Failed to retrieve notes: ", err)
+		http.Error(w, "Failed to retrieve notes", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(notes)
+	if err := json.NewEncoder(w).Encode(notes); err != nil {
+		logger.Error.Println("Failed to encode notes:", err)
+		http.Error(w, "Failed to encode notes", http.StatusInternalServerError)
+	}
 }
 
 func (h *HandlerNote) GetNoteByID(w http.ResponseWriter, r *http.Request) {
@@ -37,23 +41,30 @@ func (h *HandlerNote) GetNoteByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Note ID is required", http.StatusBadRequest)
 		return
 	}
+
 	noteID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		http.Error(w, "Invalid note ID format", http.StatusBadRequest)
 		return
 	}
+
 	note, err := h.Repo.GetNoteByID(noteID)
 	if err != nil {
 		if err.Error() == "note not found" {
 			http.Error(w, "Note not found", http.StatusNotFound)
 		} else {
+			logger.Error.Println("Failed to retrieve note: ", err)
 			http.Error(w, fmt.Sprintf("Failed to retrieve note. Error: %s", err.Error()), http.StatusInternalServerError)
 		}
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(note)
+	if err := json.NewEncoder(w).Encode(note); err != nil {
+		logger.Error.Println("Failed to encode notes:", err)
+		http.Error(w, "Failed to encode notes", http.StatusInternalServerError)
+	}
 }
 
 func (h *HandlerNote) CreateNote(w http.ResponseWriter, r *http.Request) {
@@ -64,10 +75,17 @@ func (h *HandlerNote) CreateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Repo.CreateNote(note)
+	createdNote, err := h.Repo.CreateNote(note)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create note. Error: %s", err.Error()), http.StatusInternalServerError)
 		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(createdNote); err != nil {
+		logger.Error.Println("Failed to encode notes:", err)
+		http.Error(w, "Failed to encode notes", http.StatusInternalServerError)
 	}
 }
 
@@ -91,12 +109,18 @@ func (h *HandlerNote) UpdateNote(w http.ResponseWriter, r *http.Request) {
 	}
 	note.ID = noteID
 
-	err = h.Repo.UpdateNote(note)
+	updatedNote, err := h.Repo.UpdateNote(note)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to update note. Error: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(updatedNote); err != nil {
+		logger.Error.Println("Failed to encode notes:", err)
+		http.Error(w, "Failed to encode notes", http.StatusInternalServerError)
+	}
 }
 
 func (h *HandlerNote) DeleteNote(w http.ResponseWriter, r *http.Request) {
@@ -113,9 +137,9 @@ func (h *HandlerNote) DeleteNote(w http.ResponseWriter, r *http.Request) {
 
 	err = h.Repo.DeleteNote(noteID)
 	if err != nil {
-
 		http.Error(w, fmt.Sprintf("Failed to delete note. Error: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 }

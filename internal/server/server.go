@@ -3,6 +3,7 @@ package server
 import (
 	"database/sql"
 	"github/JosacabDev/api-sqlite/internal/notes"
+	"github/JosacabDev/api-sqlite/pkg/middleware"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -21,6 +22,7 @@ func NewServer(port string, db *sql.DB) *Server {
 		Router: chi.NewRouter(),
 	}
 
+	s.Router.Use(middleware.RequestLogger)
 	s.setUpRoutes()
 	return s
 }
