@@ -3,6 +3,8 @@ package notes
 import (
 	"encoding/json"
 	"fmt"
+	customErros "github/JosacabDev/api-sqlite/pkg/errors"
+	"github/JosacabDev/api-sqlite/pkg/libjson"
 	"github/JosacabDev/api-sqlite/pkg/logger"
 	"net/http"
 	"strconv"
@@ -24,122 +26,107 @@ func (h *HandlerNote) GetAllNotes(w http.ResponseWriter, r *http.Request) {
 	notes, err := h.Repo.GetAllNotes()
 	if err != nil {
 		logger.Error.Println("Failed to retrieve notes: ", err)
-		http.Error(w, "Failed to retrieve notes", http.StatusInternalServerError)
+		libjson.EncodeCustomError(w, customErros.InternalError(fmt.Sprintf("Failed to retrieve notes. Error: %s", err.Error())))
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(notes); err != nil {
-		logger.Error.Println("Failed to encode notes:", err)
-		http.Error(w, "Failed to encode notes", http.StatusInternalServerError)
-	}
+	libjson.EncodeOk(w, notes)
 }
 
 func (h *HandlerNote) GetNoteByID(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
-		http.Error(w, "Note ID is required", http.StatusBadRequest)
+		libjson.EncodeCustomError(w, customErros.BadRequestError("Note ID is required"))
 		return
 	}
 
 	noteID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		http.Error(w, "Invalid note ID format", http.StatusBadRequest)
+		libjson.EncodeCustomError(w, customErros.BadRequestError("Invalid note ID format"))
 		return
 	}
 
 	note, err := h.Repo.GetNoteByID(noteID)
 	if err != nil {
-		if err.Error() == "note not found" {
-			http.Error(w, "Note not found", http.StatusNotFound)
-		} else {
-			logger.Error.Println("Failed to retrieve note: ", err)
-			http.Error(w, fmt.Sprintf("Failed to retrieve note. Error: %s", err.Error()), http.StatusInternalServerError)
-		}
+		logger.Error.Println("Failed to retrieve note: ", err)
+		libjson.EncodeCustomError(w, err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(note); err != nil {
-		logger.Error.Println("Failed to encode notes:", err)
-		http.Error(w, "Failed to encode notes", http.StatusInternalServerError)
-	}
+	libjson.EncodeOk(w, note)
 }
 
 func (h *HandlerNote) CreateNote(w http.ResponseWriter, r *http.Request) {
 	var note Note
 	err := json.NewDecoder(r.Body).Decode(&note)
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		logger.Error.Println("Failed to decode request body:", err)
+		libjson.EncodeCustomError(w, customErros.BadRequestError("Invalid request payload"))
 		return
 	}
 
 	createdNote, err := h.Repo.CreateNote(note)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to create note. Error: %s", err.Error()), http.StatusInternalServerError)
+		logger.Error.Println("Failed to create note:", err)
+		libjson.EncodeCustomError(w, customErros.InternalError(fmt.Sprintf("Failed to create note. Error: %s", err.Error())))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(createdNote); err != nil {
-		logger.Error.Println("Failed to encode notes:", err)
-		http.Error(w, "Failed to encode notes", http.StatusInternalServerError)
-	}
+	libjson.EncodeCreated(w, createdNote)
 }
 
 func (h *HandlerNote) UpdateNote(w http.ResponseWriter, r *http.Request) {
 	var note Note
 	id := chi.URLParam(r, "id")
 	if id == "" {
-		http.Error(w, "Note ID is required", http.StatusBadRequest)
+		logger.Error.Println("Note ID is required")
+		libjson.EncodeCustomError(w, customErros.BadRequestError("Note ID is required"))
 		return
 	}
 	noteID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		http.Error(w, "Invalid note ID format", http.StatusBadRequest)
+		logger.Error.Println("Invalid note ID format:", err)
+		libjson.EncodeCustomError(w, customErros.BadRequestError("Invalid note ID format"))
 		return
 	}
 
 	err = json.NewDecoder(r.Body).Decode(&note)
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		logger.Error.Println("Failed to decode request body:", err)
+		libjson.EncodeCustomError(w, customErros.BadRequestError("Invalid request payload"))
 		return
 	}
 	note.ID = noteID
 
 	updatedNote, err := h.Repo.UpdateNote(note)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to update note. Error: %s", err.Error()), http.StatusInternalServerError)
+		logger.Error.Println("Failed to update note:", err)
+		libjson.EncodeCustomError(w, err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(updatedNote); err != nil {
-		logger.Error.Println("Failed to encode notes:", err)
-		http.Error(w, "Failed to encode notes", http.StatusInternalServerError)
-	}
+	libjson.EncodeOk(w, updatedNote)
 }
 
 func (h *HandlerNote) DeleteNote(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
-		http.Error(w, "Note ID is required", http.StatusBadRequest)
+		logger.Error.Println("Note ID is required")
+		libjson.EncodeCreated(w, customErros.BadRequestError("Note ID is required"))
 		return
 	}
 	noteID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		http.Error(w, "Invalid note ID format", http.StatusBadRequest)
+		logger.Error.Println("Invalid note ID format:", err)
+		libjson.EncodeCustomError(w, customErros.BadRequestError("Invalid note ID format"))
 		return
 	}
 
 	err = h.Repo.DeleteNote(noteID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to delete note. Error: %s", err.Error()), http.StatusInternalServerError)
+		logger.Error.Println("Failed to delete note:", err)
+		libjson.EncodeCustomError(w, customErros.InternalError(fmt.Sprintf("Failed to delete note. Error: %s", err.Error())))
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	libjson.EncodeNoContent(w)
 }

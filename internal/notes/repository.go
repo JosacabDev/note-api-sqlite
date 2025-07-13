@@ -2,7 +2,7 @@ package notes
 
 import (
 	"database/sql"
-	"errors"
+	customErrors "github/JosacabDev/api-sqlite/pkg/errors"
 )
 
 type repository struct {
@@ -43,7 +43,7 @@ func (r *repository) GetNoteByID(id int64) (*Note, error) {
 	row := r.DB.QueryRow(query, id)
 	if err := row.Scan(&note.ID, &note.Title, &note.Content); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New("note not found")
+			return nil, customErrors.NewAppError("Note not found", "NotesRepository.GetNoteByID", customErrors.ErrorCodeNotFound)
 		}
 		return nil, err
 	}
