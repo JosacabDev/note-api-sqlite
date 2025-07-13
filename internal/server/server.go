@@ -39,6 +39,11 @@ func (s *Server) setUpRoutes() {
 		r.Put("/{id}", notesHandler.UpdateNote)
 		r.Delete("/{id}", notesHandler.DeleteNote)
 	})
+
+	// Tasks
+	s.Router.Route("/tasks", func(r chi.Router) {
+
+	})
 }
 
 func (s *Server) Start() error {
