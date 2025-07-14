@@ -3,6 +3,7 @@ package server
 import (
 	"database/sql"
 	"github/JosacabDev/api-sqlite/internal/notes"
+	"github/JosacabDev/api-sqlite/internal/tasks"
 	"github/JosacabDev/api-sqlite/pkg/middleware"
 	"net/http"
 
@@ -31,6 +32,9 @@ func (s *Server) setUpRoutes() {
 	notesRepo := notes.NewRepository(s.DB)
 	notesHandler := notes.NewHandlerNote(notesRepo)
 
+	tasksRepo := tasks.NewRepository(s.DB)
+	tasksHandler := tasks.NewHandlerTask(tasksRepo)
+
 	// Notes
 	s.Router.Route("/notes", func(r chi.Router) {
 		r.Get("/", notesHandler.GetAllNotes)
@@ -38,6 +42,11 @@ func (s *Server) setUpRoutes() {
 		r.Post("/", notesHandler.CreateNote)
 		r.Put("/{id}", notesHandler.UpdateNote)
 		r.Delete("/{id}", notesHandler.DeleteNote)
+	})
+
+	// Tasks
+	s.Router.Route("/tasks", func(r chi.Router) {
+		r.Get("/", tasksHandler.GetAllTasks)
 	})
 }
 
